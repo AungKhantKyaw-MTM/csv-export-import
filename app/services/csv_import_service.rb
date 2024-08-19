@@ -5,15 +5,54 @@ class CsvImportService
       opened_file = File.open(file)
       options = { headers: true, col_sep: ',' }
       CSV.foreach(opened_file, **options) do |row|
-  
-        post_hash = {}
-        post_hash[:title] = row['Title']
-        post_hash[:body] = row['body']
-        post_hash[:author] = row['author']
-        post_hash[:likes] = row['like']
-        post_hash[:comments] = row['comments']
-  
-        Post.find_or_create_by!(post_hash)
+        action = row['action'].downcase
+        post_id = row['id']
+
+        case action
+        when 'create'
+          create_post(row)
+        when 'update'
+          update_post(post_id, row)
+        when 'delete'
+          delete_post(post_id)
+        else
+          Rails.logger.error "Unknown action '#{action}' for row #{row.to_hash}"
+        end
       end
+    end
+
+    private
+
+    def create_post(row)
+      post_hash = extract_post_attributes(row)
+      Post.create!(post_hash)
+    end
+
+    def update_post(id, row)
+      post = Post.find_by(id: id)
+      if post
+        post.update!(extract_post_attributes(row))
+      else
+        Rails.logger.error "Post with id '#{id}' not found for update action"
+      end
+    end
+
+    def delete_post(id)
+      post = Post.find_by(id: id)
+      if post
+        post.destroy!
+      else
+        Rails.logger.error "Post with id '#{id}' not found for delete action"
+      end
+    end
+
+    def extract_post_attributes(row)
+      {
+        title: row['title'],
+        body: row['body'],
+        author: row['author'],
+        likes: row['likes'],
+        comments: row['comments']
+      }
     end
   end
