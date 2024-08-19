@@ -1,54 +1,53 @@
+// importing data one by one with row
+
+
+
 class CsvImportService
     require 'csv'
   
     def call(file)
       opened_file = File.open(file)
       options = { headers: true, col_sep: ',' }
-
-      create_posts = []
-      update_posts = []
-      delete_posts = []
-
       CSV.foreach(opened_file, **options) do |row|
         action = row['action'].downcase
         post_id = row['id']
 
         case action
         when 'create'
-          create_posts << extract_post_attributes(row)
+          create_post(row)
         when 'update'
-          update_posts << { id: post_id, attributes: extract_post_attributes(row) }
+          update_post(post_id, row)
         when 'delete'
-          delete_posts << post_id
+          delete_post(post_id)
         else
           Rails.logger.error "Unknown action '#{action}' for row #{row.to_hash}"
         end
       end
-
-      import_all(create_posts)
-      update_all(update_posts)
-      delete_ids(delete_posts)
     end
 
     private
 
-    def import_all(records)
-      Post.import(records)
+    def create_post(row)
+      post_hash = extract_post_attributes(row)
+      Post.create!(post_hash)
     end
 
-    def update_all(records)
-      records.each do |record|
-        post = Post.find_by(id: record[:id])
-        if post
-          post.update!(record[:attributes])
-        else
-          Rails.logger.error "Post with id '#{record[:id]}' not found for update action"
-        end
+    def update_post(id, row)
+      post = Post.find_by(id: id)
+      if post
+        post.update!(extract_post_attributes(row))
+      else
+        Rails.logger.error "Post with id '#{id}' not found for update action"
       end
     end
 
-    def delete_ids(ids)
-      Post.where(id: ids).destroy_all
+    def delete_post(id)
+      post = Post.find_by(id: id)
+      if post
+        post.destroy!
+      else
+        Rails.logger.error "Post with id '#{id}' not found for delete action"
+      end
     end
 
     def extract_post_attributes(row)
