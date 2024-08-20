@@ -1,15 +1,14 @@
 class CsvImportService
   require 'csv'
 
-  def call(file)
-    opened_file = File.open(file)
+  def call(file_content)
     options = { headers: true, col_sep: ',' }
 
     create_posts = []
     update_posts = []
     delete_posts = []
 
-    CSV.foreach(opened_file, **options) do |row|
+    CSV.parse(file_content, **options) do |row|
       action = row['action'].downcase
       post_id = row['id']
 

@@ -11,12 +11,23 @@ class PostsController < ApplicationController
   end
 
   def import
-    return redirect_to request.referer, notice: 'No file added' if params[:file].nil?
-    return redirect_to request.referer, notice: 'Only CSV files allowed' unless params[:file].content_type == 'text/csv'
-
-    CsvImportService.new.call(params[:file])
-
-    redirect_to request.referer, notice: 'Import started...'
+    if params[:file].nil?
+      redirect_to request.referer, notice: 'No file added'
+    elsif params[:file].content_type != 'text/csv'
+      redirect_to request.referer, notice: 'Only CSV files allowed'
+    else
+      filename = "#{SecureRandom.uuid}.csv"
+      file_path = Rails.root.join('tmp', 'csv_uploads', filename)
+  
+      FileUtils.mkdir_p(File.dirname(file_path))
+  
+      File.open(file_path, 'wb') do |file|
+        file.write(params[:file].read)
+      end
+  
+      CsvJob.perform_async(file_path.to_s)
+      redirect_to request.referer, notice: 'Import started...'
+    end
   end
 
   # GET /posts/1 or /posts/1.json

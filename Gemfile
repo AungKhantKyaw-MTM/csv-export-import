@@ -68,3 +68,8 @@ end
 
 
 gem 'activerecord-import', '~> 1.7'
+gem 'dotenv-rails', '~> 3.1', '>= 3.1.2'
+gem 'redis-rails', '~> 5.0', '>= 5.0.2'
+gem 'redis', '~> 5.2'
+gem 'sidekiq', '~> 7.3', '>= 7.3.1'
+gem 'byebug', '~> 11.1', '>= 11.1.3'
